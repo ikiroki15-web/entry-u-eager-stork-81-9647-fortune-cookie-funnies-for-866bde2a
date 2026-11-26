@@ -28,7 +28,10 @@ function charCount(text) {
 function readFortune() {
   const here = dirname(fileURLToPath(import.meta.url));
   const raw = readFileSync(join(here, "fortune.txt"), "utf8");
-  const lines = raw.split(/\r?\n/).filter((line) => line.length > 0);
+  // Strip a leading byte-order mark so an editor-saved file still
+  // yields exactly the fortune line, with no invisible first char.
+  const cleaned = raw.replace(/^\uFEFF/, "");
+  const lines = cleaned.split(/\r?\n/).filter((line) => line.length > 0);
   if (lines.length === 0) {
     throw new Error("fortune.txt holds no line");
   }
@@ -62,7 +65,22 @@ function writeEntry(fortune) {
   writeFileSync("/output/entry.txt", fortune, "utf8");
 }
 
+function printUsage() {
+  console.log(
+    "Usage: node main.ts [--help]\n" +
+      "\n" +
+      "Reads the one-line fortune from fortune.txt (1-120 characters),\n" +
+      "validates it against the competition gate and writes it verbatim\n" +
+      "to /output/entry.txt.",
+  );
+}
+
 function main() {
+  const args = process.argv.slice(2);
+  if (args.includes("--help") || args.includes("-h")) {
+    printUsage();
+    return;
+  }
   const fortune = readFortune();
   const count = validateFortune(fortune);
   writeEntry(fortune);
